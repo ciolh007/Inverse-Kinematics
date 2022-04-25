@@ -1,0 +1,2058 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+        <title>Inverse Kinematics</title>
+
+        <link rel="stylesheet" href="css/reveal.css">
+        <link rel="stylesheet" href="css/theme/ntnuerc.css">
+
+        <!-- Theme used for syntax highlighting of code -->
+        <link rel="stylesheet" href="lib/css/zenburn.css">
+        <script src="https://daybrush.com/scenejs/release/latest/dist/scene.min.js"></script>
+		
+        <!-- Printing and PDF exports -->
+        <script>
+            var link = document.createElement( 'link' );
+            link.rel = 'stylesheet';
+            link.type = 'text/css';
+            link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+            document.getElementsByTagName( 'head' )[0].appendChild( link );
+        </script>
+        <script src="js/ntnu.js"></script>
+    </head>
+    <body>
+        <div class="reveal">
+        <div class="slides">
+            
+<section id="first" data-state="first">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1> Inverse Kinematics</h1>
+
+   <div class="author" style="text-align:center;">
+    
+<p>
+      Jacky Baltes<br>
+      National Taiwan Normal University<br>
+      Taipei, Taiwan<br>
+      <a href="mailto:jacky.baltes@ntnu.edu.tw">jacky.baltes@ntnu.edu.tw</a><br>
+</p>
+
+   </div>
+   <div class="date">
+    25 April 2022
+   </div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-472a0d90-5fcb-4eb4-9ecd-0356947d14ed" ><span id="id-472a0d90-5fcb-4eb4-9ecd-0356947d14ed"><img id="img-id-472a0d90-5fcb-4eb4-9ecd-0356947d14ed"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-873c003a-73d9-4916-9476-7d5d1a22a45e" ><span id="id-873c003a-73d9-4916-9476-7d5d1a22a45e"><img id="img-id-873c003a-73d9-4916-9476-7d5d1a22a45e" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00003_frag_00001" data-state="slide_00003_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #408080; font-style: italic"># These libraries provide us with the most often used features</span>
+
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.patches</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">mpatches</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">numpy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">np</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">math</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">random</span>
+
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">jb_geometry</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">jbg</span>
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-f5390b29-155b-43f5-8f14-1061e84f282c" ><span id="id-f5390b29-155b-43f5-8f14-1061e84f282c"><img id="img-id-f5390b29-155b-43f5-8f14-1061e84f282c"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-6108320b-ee50-41a6-9f60-2deaa9efffcb" ><span id="id-6108320b-ee50-41a6-9f60-2deaa9efffcb"><img id="img-id-6108320b-ee50-41a6-9f60-2deaa9efffcb" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00004_frag_00001" data-state="slide_00004_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document" id="problem-definition">
+<h1 class="title">Problem Definition</h1>
+<div class="jb-text docutils container">
+<p>Forward Kinematics</p>
+<blockquote>
+From joint coordinates to coordinates $$ θ_1, θ_2, ..., θ_i $$ of the end effector in the
+inertial frame</blockquote>
+<p>Inverse Kinematics</p>
+<blockquote>
+From target coordinates $$ x_e, y_e, z_e, ...$$ of end effector in the inertial
+frame to joint coordinates $$ ( θ_1, θ_2, ... θ_n ) $$</blockquote>
+</div>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-2e6c29e0-e5f4-45ba-b393-b7bfa96ca788" ><span id="id-2e6c29e0-e5f4-45ba-b393-b7bfa96ca788"><img id="img-id-2e6c29e0-e5f4-45ba-b393-b7bfa96ca788"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-fe5f28ee-6748-4d92-9934-6c04e187f45b" ><span id="id-fe5f28ee-6748-4d92-9934-6c04e187f45b"><img id="img-id-fe5f28ee-6748-4d92-9934-6c04e187f45b" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+label slide_00004_frag_00001:
+
+
+  show JB at left
+
+
+  JB """Forward kinematics is useful in some applications, since we can find the coordinates of the end
+  effector in the inertial frame given the joint coordinates"""
+
+
+  JB """But more often we have to solve the inverse problem: given target coordinates for the end effector, find 
+  the joint coordinates"""
+</aside>
+
+
+
+</section>
+<section id="slide_00005_frag_00001" data-state="slide_00005_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>General Formulation</h1>
+
+<div class="jb-text" style="font-size:0.7em">
+Target is a transformation matrix for forward kinematics<br>
+\[
+  H = \left[ 
+            \begin{array}{cc}
+              R_{3x3} & o_{3x1} \\
+              0 & 1 \\
+            \end{array}
+      \right]
+\]
+
+<p>Find the compound transformation matrix
+\[
+  T_{n}^{0}(q_1, q_2, .... q_n) = H
+\]
+</p>
+
+\[
+  T_{n}^{0}(q_1, q_2, .... q_n) = A_1(q_1) A_2(q_2) A_3(q_3) ... A_n(q_n)
+\]
+<p>So we must find the joint variables \( q_1, q_2, ... q_n \) such that 
+
+\[
+  A_1(q_1) A_2(q_2) A_3(q_3) ... A_n(q_n) = H
+\]
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-08063340-237c-4b10-a873-d3949b6b4b2a" ><span id="id-08063340-237c-4b10-a873-d3949b6b4b2a"><img id="img-id-08063340-237c-4b10-a873-d3949b6b4b2a"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-8e4686fe-47dd-4b9f-b017-c739b16929ab" ><span id="id-8e4686fe-47dd-4b9f-b017-c739b16929ab"><img id="img-id-8e4686fe-47dd-4b9f-b017-c739b16929ab" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00006_frag_00001" data-state="slide_00006_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">sym</span>
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">jb_geometry</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">jbg</span>
+
+m1 <span style="color: #666666">=</span> jbg<span style="color: #666666">.</span>translate( <span style="color: #666666">0</span>, <span style="color: #666666">0.22</span>, <span style="color: #666666">0.4</span> )
+<span style="color: #008000">print</span>(m1)
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre >
+[[1.   0.   0.   0.  ]
+ [0.   1.   0.   0.22]
+ [0.   0.   1.   0.4 ]
+ [0.   0.   0.   1.  ]]
+</pre>
+</div>
+</div>
+
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-8952cc19-56dc-44fd-9a3e-9a7ef9b8b917" ><span id="id-8952cc19-56dc-44fd-9a3e-9a7ef9b8b917"><img id="img-id-8952cc19-56dc-44fd-9a3e-9a7ef9b8b917"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-cb9db373-476b-4309-9519-9f48baef4bab" ><span id="id-cb9db373-476b-4309-9519-9f48baef4bab"><img id="img-id-cb9db373-476b-4309-9519-9f48baef4bab" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00007_frag_00001" data-state="slide_00007_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">sym</span>
+<span style="color: #008000; font-weight: bold">from</span> <span style="color: #0000FF; font-weight: bold">sympy</span> <span style="color: #008000; font-weight: bold">import</span> init_printing
+
+<span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">jb_geometry</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">jbg</span>
+init_printing()
+
+theta1 <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>Symbol( <span style="color: #BA2121">&#39;theta1&#39;</span> )
+
+m1 <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>Matrix( [ [ <span style="color: #666666">1</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span> ], [ <span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0.22</span> ], [ <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">0.4</span> ], [ <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span> ] ] )
+
+m2 <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>Matrix( [ [ <span style="color: #666666">1</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, ], 
+              [ <span style="color: #666666">0</span>, sym<span style="color: #666666">.</span>cos(<span style="color: #BA2121">&#39;theta1&#39;</span>), sym<span style="color: #666666">.</span>sin(<span style="color: #BA2121">&#39;theta1&#39;</span>), <span style="color: #666666">0</span> ], 
+              [ <span style="color: #666666">0</span>, <span style="color: #666666">-</span>sym<span style="color: #666666">.</span>sin(<span style="color: #BA2121">&#39;theta1&#39;</span>), sym<span style="color: #666666">.</span>cos(<span style="color: #BA2121">&#39;theta1&#39;</span>), <span style="color: #666666">0</span> ], 
+              [ <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span> ] ] )
+T1 <span style="color: #666666">=</span> m1 <span style="color: #666666">*</span> m2
+sym<span style="color: #666666">.</span>pprint(T1)
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre >
+⎡1     0         0      0  ⎤
+⎢                          ⎥
+⎢0  cos(θ₁)   sin(θ₁)  0.22⎥
+⎢                          ⎥
+⎢0  -sin(θ₁)  cos(θ₁)  0.4 ⎥
+⎢                          ⎥
+⎣0     0         0      1  ⎦
+</pre>
+</div>
+</div>
+
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-4d85a080-7f6f-4a73-a61a-42682d2e3259" ><span id="id-4d85a080-7f6f-4a73-a61a-42682d2e3259"><img id="img-id-4d85a080-7f6f-4a73-a61a-42682d2e3259"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-fb31e42a-0360-4f80-8c5d-2cc200cf8b5a" ><span id="id-fb31e42a-0360-4f80-8c5d-2cc200cf8b5a"><img id="img-id-fb31e42a-0360-4f80-8c5d-2cc200cf8b5a" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00008_frag_00001" data-state="slide_00008_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>j11 <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>Matrix( [ [ sym<span style="color: #666666">.</span>cos( <span style="color: #BA2121">&#39;theta2&#39;</span> ), <span style="color: #666666">-</span>sym<span style="color: #666666">.</span>sin(  <span style="color: #BA2121">&#39;theta2&#39;</span>), <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, ], 
+                    [ sym<span style="color: #666666">.</span>sin( <span style="color: #BA2121">&#39;theta2&#39;</span> ),  sym<span style="color: #666666">.</span>cos(  <span style="color: #BA2121">&#39;theta2&#39;</span>), <span style="color: #666666">0</span>, <span style="color: #666666">0</span> ], 
+                    [ <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">0</span> ], 
+                    [ <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span> ] ] )
+j12 <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>Matrix( [ [ <span style="color: #666666">1</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0.05</span> ], [ <span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span> ], [<span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span>, <span style="color: #666666">0.1</span> ], [ <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span> ] ] )
+j13 <span style="color: #666666">=</span> sym<span style="color: #666666">.</span>Matrix( [ [ <span style="color: #666666">1</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, ], 
+              [ <span style="color: #666666">0</span>, sym<span style="color: #666666">.</span>cos( sym<span style="color: #666666">.</span>pi<span style="color: #666666">/2</span> ), sym<span style="color: #666666">.</span>sin( sym<span style="color: #666666">.</span>pi<span style="color: #666666">/2</span>), <span style="color: #666666">0</span> ], 
+              [ <span style="color: #666666">0</span>, <span style="color: #666666">-</span>sym<span style="color: #666666">.</span>sin(sym<span style="color: #666666">.</span>pi<span style="color: #666666">/2</span>), sym<span style="color: #666666">.</span>cos( sym<span style="color: #666666">.</span>pi<span style="color: #666666">/2</span>), <span style="color: #666666">0</span> ], 
+              [ <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, <span style="color: #666666">1</span> ] ] )
+T2 <span style="color: #666666">=</span> j11 <span style="color: #666666">*</span> j12 <span style="color: #666666">*</span> j13
+sym<span style="color: #666666">.</span>pprint(T2)
+
+sym<span style="color: #666666">.</span>pprint(T1<span style="color: #666666">*</span>T2)
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre >
+⎡cos(θ₂)  0   -sin(θ₂)  0.05⋅cos(θ₂)⎤
+⎢                                   ⎥
+⎢sin(θ₂)  0   cos(θ₂)   0.05⋅sin(θ₂)⎥
+⎢                                   ⎥
+⎢   0     -1     0          0.1     ⎥
+⎢                                   ⎥
+⎣   0     0      0           1      ⎦
+⎡    cos(θ₂)          0          -sin(θ₂)                    0.05⋅cos(θ₂)     
+⎢                                                                             
+⎢sin(θ₂)⋅cos(θ₁)   -sin(θ₁)  cos(θ₁)⋅cos(θ₂)   0.1⋅sin(θ₁) + 0.05⋅sin(θ₂)⋅cos(
+⎢                                                                             
+⎢-sin(θ₁)⋅sin(θ₂)  -cos(θ₁)  -sin(θ₁)⋅cos(θ₂)  -0.05⋅sin(θ₁)⋅sin(θ₂) + 0.1⋅cos
+⎢                                                                             
+⎣       0             0             0                              1          
+
+          ⎤
+          ⎥
+θ₁) + 0.22⎥
+          ⎥
+(θ₁) + 0.4⎥
+          ⎥
+          ⎦
+</pre>
+</div>
+</div>
+
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-03f7512f-100b-43d6-8dd1-178e2e59a178" ><span id="id-03f7512f-100b-43d6-8dd1-178e2e59a178"><img id="img-id-03f7512f-100b-43d6-8dd1-178e2e59a178"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-3cb8449e-367e-47e9-89ed-21637ee151d8" ><span id="id-3cb8449e-367e-47e9-89ed-21637ee151d8"><img id="img-id-3cb8449e-367e-47e9-89ed-21637ee151d8" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00009_frag_00001" data-state="slide_00009_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document" id="expanding-the-matrix-equations">
+<h1 class="title">Expanding the Matrix Equations</h1>
+<div class="jb-text docutils container">
+<p>Expanding the matrix leads to non-linear equations with n unknowns for an n joint robot</p>
+<p>Difficult to find closed form solution</p>
+<p>Not all mathematical solutions can be realized since we have joint limits</p>
+</div>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-38257468-2660-4e18-bdc7-8c96c3012d89" ><span id="id-38257468-2660-4e18-bdc7-8c96c3012d89"><img id="img-id-38257468-2660-4e18-bdc7-8c96c3012d89"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-341b7005-af32-462b-b826-0300b673276d" ><span id="id-341b7005-af32-462b-b826-0300b673276d"><img id="img-id-341b7005-af32-462b-b826-0300b673276d" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00010_frag_00001" data-state="slide_00010_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Amibguities</h1>
+
+<div class="jb-text">
+<p>Ambiguities means that there is many possible solutions</p>
+
+<p>Even on simple robots, we often have infinite solutions</p>
+
+<div style="text-align:center;width:50%">
+<span id="id-0778ae57-fdfa-4827-855e-509c4adfed02" ><span id="id-0778ae57-fdfa-4827-855e-509c4adfed02"><img id="img-id-0778ae57-fdfa-4827-855e-509c4adfed02"     src="assets/images/ik1.png"/></span>
+</span>
+
+</div>
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-32467ae6-403c-4745-982d-0331b490ebb7" ><span id="id-32467ae6-403c-4745-982d-0331b490ebb7"><img id="img-id-32467ae6-403c-4745-982d-0331b490ebb7"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-16aeac5a-e83e-45a8-bd2f-73e7fecd2a28" ><span id="id-16aeac5a-e83e-45a8-bd2f-73e7fecd2a28"><img id="img-id-16aeac5a-e83e-45a8-bd2f-73e7fecd2a28" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00011_frag_00001" data-state="slide_00011_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document" id="kinematic-decoupling">
+<h1 class="title">Kinematic Decoupling</h1>
+<div class="jb-text docutils container">
+<p>Break problem up into smaller subproblems</p>
+<p>Separate the motion of the robot arm and the end effector</p>
+</div>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-19251099-990a-4f14-b1e3-5d0d121b2924" ><span id="id-19251099-990a-4f14-b1e3-5d0d121b2924"><img id="img-id-19251099-990a-4f14-b1e3-5d0d121b2924"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-3910b8ee-7974-43bd-990a-fe8d612e53fd" ><span id="id-3910b8ee-7974-43bd-990a-fe8d612e53fd"><img id="img-id-3910b8ee-7974-43bd-990a-fe8d612e53fd" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00012_frag_00001" data-state="slide_00012_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document" id="decoupling-of-humanoid-robot-leg-in-lateral-plane">
+<h1 class="title">Decoupling of Humanoid Robot Leg in Lateral Plane</h1>
+<div class="jb-text docutils container">
+Kinematic decoupling into just two joints (lower leg, length 0.5m) and (upper leg 0.4m)</div>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-0f094d17-7340-4959-8f87-38b6e66dbe99" ><span id="id-0f094d17-7340-4959-8f87-38b6e66dbe99"><img id="img-id-0f094d17-7340-4959-8f87-38b6e66dbe99"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-7743ac60-4282-4dc0-a6dc-8fecc3f67c82" ><span id="id-7743ac60-4282-4dc0-a6dc-8fecc3f67c82"><img id="img-id-7743ac60-4282-4dc0-a6dc-8fecc3f67c82" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00013_frag_00001" data-state="slide_00013_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Two Link Inverse Kinematics Problem</h1>
+
+<div class="jb-figure">
+<span id="id-45188bee-121f-470c-a9ce-ce01456ad5c4" ><span id="id-45188bee-121f-470c-a9ce-ce01456ad5c4"><img id="img-id-45188bee-121f-470c-a9ce-ce01456ad5c4"     src="assets/images/ik2.svg"/></span>
+</span>
+
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-8a673339-09e9-481a-a03e-22ba39dfd9c9" ><span id="id-8a673339-09e9-481a-a03e-22ba39dfd9c9"><img id="img-id-8a673339-09e9-481a-a03e-22ba39dfd9c9"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-240d3d7a-2bf9-4a37-9728-5972c788efb0" ><span id="id-240d3d7a-2bf9-4a37-9728-5972c788efb0"><img id="img-id-240d3d7a-2bf9-4a37-9728-5972c788efb0" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00014_frag_00001" data-state="slide_00014_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>l1 <span style="color: #666666">=</span> <span style="color: #666666">0.5</span>
+l2 <span style="color: #666666">=</span> <span style="color: #666666">0.4</span>
+theta1 <span style="color: #666666">=</span> <span style="color: #666666">30/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi
+theta2 <span style="color: #666666">=</span> <span style="color: #666666">110/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi
+
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure()
+ax <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">1</span>,<span style="color: #666666">1</span>)
+ax<span style="color: #666666">.</span>set_aspect(<span style="color: #BA2121">&quot;equal&quot;</span>)
+<span style="color: #408080; font-style: italic"># cos(t1)*l1, sin(t1)*l1 -&gt; cos(t1)*l1 + cos(t1+t2) * l1, sin(t1)*l2 + sin(t1+t2)*l2 </span>
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1], [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 ], <span style="color: #BA2121">&#39;-&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;blue&#39;</span>, linewidth<span style="color: #666666">=5</span> )
+ax<span style="color: #666666">.</span>plot( [<span style="color: #666666">0</span>, <span style="color: #666666">0.2</span>], [<span style="color: #666666">0</span>, <span style="color: #666666">0</span>], <span style="color: #BA2121">&#39;b--&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1<span style="color: #666666">/3</span>], [ math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1<span style="color: #666666">/3</span> ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], [ math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;-&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=5</span> )
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], 
+        [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;green&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.05</span>, <span style="color: #666666">0.01</span>, <span style="color: #BA2121">&quot;θ_1&quot;</span>)
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.02</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.05</span>, <span style="color: #BA2121">&quot;θ_2&quot;</span>)
+
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.1</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.03</span>, <span style="color: #BA2121">&quot;α_2&quot;</span>)
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.0</span>, <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.01</span>, <span style="color: #BA2121">&quot;l1&quot;</span> )
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 <span style="color: #666666">-</span> <span style="color: #666666">0.005</span>, 
+        math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 <span style="color: #666666">+</span> <span style="color: #666666">0.001</span> , <span style="color: #BA2121">&quot;l2&quot;</span> )
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> ( math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ) <span style="color: #666666">+</span> <span style="color: #666666">0.01</span> , 
+         <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> ( math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ), <span style="color: #BA2121">&quot;l3&quot;</span> )
+
+ax<span style="color: #666666">.</span>scatter( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], [math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], <span style="color: #666666">50</span>, <span style="color: #BA2121">&quot;green&quot;</span> )
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.02</span> <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2, <span style="color: #666666">-0.01</span> <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2, <span style="color: #BA2121">&quot;Hip (Target)&quot;</span> )
+
+tx, ty <span style="color: #666666">=</span> math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2
+ik3 <span style="color: #666666">=</span> addJBFigure( <span style="color: #BA2121">&quot;ik3&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-efda014b-b85d-482a-aea7-d60969637ba6" ><span id="id-efda014b-b85d-482a-aea7-d60969637ba6"><img id="img-id-efda014b-b85d-482a-aea7-d60969637ba6"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-1f5354ae-76a5-4062-b3a8-c181021719d2" ><span id="id-1f5354ae-76a5-4062-b3a8-c181021719d2"><img id="img-id-1f5354ae-76a5-4062-b3a8-c181021719d2" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00015_frag_00001" data-state="slide_00015_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Two-Link Problem</h1>
+
+<span id="id-b96eaa7e-5b9c-4c0f-9d1a-0e70ced84f7b" ><span id="id-b96eaa7e-5b9c-4c0f-9d1a-0e70ced84f7b"><img id="img-id-b96eaa7e-5b9c-4c0f-9d1a-0e70ced84f7b"     src="assets/images/ik3.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-cd29d674-5c4a-4bc0-82b2-e0ba8bc21e3c" ><span id="id-cd29d674-5c4a-4bc0-82b2-e0ba8bc21e3c"><img id="img-id-cd29d674-5c4a-4bc0-82b2-e0ba8bc21e3c"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-cd9c9e7d-8212-466e-ac16-fabf39cfb0c3" ><span id="id-cd9c9e7d-8212-466e-ac16-fabf39cfb0c3"><img id="img-id-cd9c9e7d-8212-466e-ac16-fabf39cfb0c3" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00016_frag_00001" data-state="slide_00016_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>tx, ty 
+ox, oy <span style="color: #666666">=</span> <span style="color: #666666">0</span>, <span style="color: #666666">0</span>
+dx, dy <span style="color: #666666">=</span> tx <span style="color: #666666">-</span> ox, ty <span style="color: #666666">-</span> oy
+
+l3 <span style="color: #666666">=</span> math<span style="color: #666666">.</span>sqrt( dx<span style="color: #666666">**2</span> <span style="color: #666666">+</span> dy<span style="color: #666666">**2</span> )
+alpha <span style="color: #666666">=</span> math<span style="color: #666666">.</span>atan2( dy, dx )
+
+<span style="color: #008000">print</span>( <span style="color: #BA2121">&quot;Distance to Hip&quot;</span>, <span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">{0:.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format( l3 ), <span style="color: #BA2121">&quot;Angle&quot;</span>, <span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">{:.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format( alpha<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span> ) )
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre >
+Distance to Hip 0.52 Angle 75.98
+</pre>
+</div>
+</div>
+
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-6ab3913f-aa83-4e45-85c9-5aa26c10f824" ><span id="id-6ab3913f-aa83-4e45-85c9-5aa26c10f824"><img id="img-id-6ab3913f-aa83-4e45-85c9-5aa26c10f824"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-deea6de9-ac32-4585-a1fc-1d05e3782eb4" ><span id="id-deea6de9-ac32-4585-a1fc-1d05e3782eb4"><img id="img-id-deea6de9-ac32-4585-a1fc-1d05e3782eb4" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00017_frag_00001" data-state="slide_00017_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Two Link Solution</h1>
+
+<div class="jb-text">
+<p>The target location for the hip is (  0.13,  0.51 )
+
+<p>Convert it into polar coordinates with 
+\[
+  \begin{array}{l}
+  l_3 = \sqrt{ dx^2 + dy^2 } \\
+  \alpha = atan2( dy, dx )
+  \end{array}
+\]
+
+<p>l3 =  0.52, alpha = 75.98
+</div>
+
+<span id="id-b9099623-fca3-45ee-8f27-5b7f50ca11ae" ><span id="id-b9099623-fca3-45ee-8f27-5b7f50ca11ae"><img id="img-id-b9099623-fca3-45ee-8f27-5b7f50ca11ae"     src="assets/images/ik3.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-12abd00a-1b8d-47b5-9720-943b5357af4f" ><span id="id-12abd00a-1b8d-47b5-9720-943b5357af4f"><img id="img-id-12abd00a-1b8d-47b5-9720-943b5357af4f"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-40556594-429e-4330-a5c6-4dc91e45c39e" ><span id="id-40556594-429e-4330-a5c6-4dc91e45c39e"><img id="img-id-40556594-429e-4330-a5c6-4dc91e45c39e" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00018_frag_00001" data-state="slide_00018_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Cosine Law</h1>
+
+<div class="jb-text">
+\[
+  l_3^2 = l_1^2 + l_2^2 - 2 l_1 l_2 \cos(\alpha_2)
+\]
+
+<p>We can then calculate the angle \(α_2\), since \(l_1\),\(l_2\) are all known</p>
+
+<p>We can then calculate the angle of the knee</p>
+
+\[
+  \begin{array}{ccc}
+    l_3^2 - l_1^2 - l_2^2 & = & - 2 l_1 l_2 \cos( \alpha_2 ) \\
+    \cos( \alpha_2 ) = \frac{ l_3^2 - l_1^2 - l_2^2 }{-2 l_1 l_2 } \\
+    \cos( \alpha_2 ) = \frac{ l_1^2 + l_2^2 - l_3^2}{2 l_1 l_2 } \\
+    \alpha_2 = \arccos( \frac{ l_1^2 + l_2^2 - l_3^2}{2 l_1 l_2 } ) \\
+  \end{array}
+\]
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-20f280ca-e0fe-44f6-a670-8f5701d6d32f" ><span id="id-20f280ca-e0fe-44f6-a670-8f5701d6d32f"><img id="img-id-20f280ca-e0fe-44f6-a670-8f5701d6d32f"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-495cc127-3cea-4f97-8e75-645008be70fe" ><span id="id-495cc127-3cea-4f97-8e75-645008be70fe"><img id="img-id-495cc127-3cea-4f97-8e75-645008be70fe" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00019_frag_00001" data-state="slide_00019_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div style="font-size:0.5em"><!-- start of style="font-size:0.5em" -->
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+
+l1 <span style="color: #666666">=</span> <span style="color: #666666">0.5</span>
+l2 <span style="color: #666666">=</span> <span style="color: #666666">0.4</span>
+theta1 <span style="color: #666666">=</span> <span style="color: #666666">20/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi
+theta2 <span style="color: #666666">=</span> <span style="color: #666666">110/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi
+
+tx <span style="color: #666666">=</span>  math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2
+ty <span style="color: #666666">=</span>  math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2
+
+alpha <span style="color: #666666">=</span> math<span style="color: #666666">.</span>atan2( ty, tx )
+l3 <span style="color: #666666">=</span> math<span style="color: #666666">.</span>sqrt( tx<span style="color: #666666">**2</span> <span style="color: #666666">+</span> ty<span style="color: #666666">**2</span> )
+
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure()
+ax <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">1</span>,<span style="color: #666666">1</span>)
+ax<span style="color: #666666">.</span>set_aspect(<span style="color: #BA2121">&quot;equal&quot;</span>)
+<span style="color: #408080; font-style: italic"># cos(t1)*l1, sin(t1)*l1 -&gt; cos(t1)*l1 + cos(t1+t2) * l1, sin(t1)*l2 + sin(t1+t2)*l2 </span>
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1], [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 ], <span style="color: #BA2121">&#39;-&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;blue&#39;</span>, linewidth<span style="color: #666666">=5</span> )
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1<span style="color: #666666">/3</span>], [ math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1<span style="color: #666666">/3</span> ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], [ math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;-&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=5</span> )
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], 
+        [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;green&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.05</span>, <span style="color: #666666">0.01</span>, <span style="color: #BA2121">&quot;θ_1&quot;</span>)
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.02</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.05</span>, <span style="color: #BA2121">&quot;θ_2&quot;</span>)
+
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.1</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.03</span>, <span style="color: #BA2121">&quot;α_2&quot;</span>)
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.05</span>, <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.01</span>, <span style="color: #BA2121">&quot;l1&quot;</span> )
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 <span style="color: #666666">-</span> <span style="color: #666666">0.05</span>, 
+        math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 <span style="color: #666666">+</span> <span style="color: #666666">0.1</span> , <span style="color: #BA2121">&quot;l2&quot;</span> )
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> ( math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ) <span style="color: #666666">+</span> <span style="color: #666666">0.01</span> , 
+         <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> ( math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ), <span style="color: #BA2121">&quot;l3&quot;</span> )
+
+da <span style="color: #666666">=</span> alpha <span style="color: #666666">-</span> theta1
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>,  math<span style="color: #666666">.</span>cos( alpha <span style="color: #666666">+</span> da ) <span style="color: #666666">*</span> l1], [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin( alpha <span style="color: #666666">+</span> da ) <span style="color: #666666">*</span> l1 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;blue&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos( alpha <span style="color: #666666">+</span> da ) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], [ math<span style="color: #666666">.</span>sin(alpha <span style="color: #666666">+</span> da) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>text( tx <span style="color: #666666">+</span> <span style="color: #666666">0.01</span>, 
+         ty <span style="color: #666666">+</span> <span style="color: #666666">0.01</span>, <span style="color: #BA2121">&quot;(tx,ty)&quot;</span> )
+
+ik4 <span style="color: #666666">=</span> addJBFigure( <span style="color: #BA2121">&quot;ik4&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of style="font-size:0.5em" -->
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-c6804ad0-127f-42df-b113-8d46f5fe0fbb" ><span id="id-c6804ad0-127f-42df-b113-8d46f5fe0fbb"><img id="img-id-c6804ad0-127f-42df-b113-8d46f5fe0fbb"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-938e7795-cfee-42f3-9f1c-256b26f1869e" ><span id="id-938e7795-cfee-42f3-9f1c-256b26f1869e"><img id="img-id-938e7795-cfee-42f3-9f1c-256b26f1869e" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00020_frag_00001" data-state="slide_00020_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Inverse Kinematics Two Link System</h1>
+
+<div class="jb-text">
+<p>Since \( \cos(\theta) = \cos( {-\theta} ) \), there are two possible solutions to the arccos function.</p>
+</div>
+
+<span id="id-b593bd10-ec44-46ba-b3b0-e8b192ea1a23" ><span id="id-b593bd10-ec44-46ba-b3b0-e8b192ea1a23"><img id="img-id-b593bd10-ec44-46ba-b3b0-e8b192ea1a23"     src="assets/images/ik4.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-bb37d9a3-fa93-4c42-9a04-88f2017f11c0" ><span id="id-bb37d9a3-fa93-4c42-9a04-88f2017f11c0"><img id="img-id-bb37d9a3-fa93-4c42-9a04-88f2017f11c0"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-c61bdff3-fe06-4ecf-913b-df44762de6f5" ><span id="id-c61bdff3-fe06-4ecf-913b-df44762de6f5"><img id="img-id-c61bdff3-fe06-4ecf-913b-df44762de6f5" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00021_frag_00001" data-state="slide_00021_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Inverse Kinematics Two Link System</h1>
+
+<div class="jb-text">
+<p>In humanoid walking, the knee is always bending forward, so we pick the solid solution.</p>
+<p>The dashed solution is also possible, but would be appropriate for birds. Note that
+birds' knees do not bend backwards - what you think is the knees are actually the heels.</p>
+
+<table>
+<tr>
+<td>
+<span id="id-02ee12c8-75df-4ad2-af6c-bd76e2dde187" ><span id="id-02ee12c8-75df-4ad2-af6c-bd76e2dde187">
+           <video id="vid-id-02ee12c8-75df-4ad2-af6c-bd76e2dde187"   style="pointer-events:all;" controls>
+           <source src="assets/videos/human1.mp4"/>
+           </span>
+</span>
+
+</td>
+<td>
+<span id="id-c2883d3c-415b-4660-b7e0-4fdf2f661d9f" ><span id="id-c2883d3c-415b-4660-b7e0-4fdf2f661d9f">
+           <video id="vid-id-c2883d3c-415b-4660-b7e0-4fdf2f661d9f"   style="pointer-events:all;" controls>
+           <source src="assets/videos/flamingos.mp4"/>
+           </span>
+</span>
+
+</td>
+</tr>
+</table>
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-f48fbcca-b95e-41de-9aad-f4f79da5bdf3" ><span id="id-f48fbcca-b95e-41de-9aad-f4f79da5bdf3"><img id="img-id-f48fbcca-b95e-41de-9aad-f4f79da5bdf3"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-e714b158-64ef-4e45-847d-8d3dbb87fd07" ><span id="id-e714b158-64ef-4e45-847d-8d3dbb87fd07"><img id="img-id-e714b158-64ef-4e45-847d-8d3dbb87fd07" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00022_frag_00001" data-state="slide_00022_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #408080; font-style: italic"># Inverse kinematic procedure</span>
+<span style="color: #408080; font-style: italic"># Assume: tx, ty, l1, l2</span>
+
+l1 <span style="color: #666666">=</span> <span style="color: #666666">0.5</span>
+l2 <span style="color: #666666">=</span> <span style="color: #666666">0.4</span>
+theta1 <span style="color: #666666">=</span> <span style="color: #666666">20/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi
+theta2 <span style="color: #666666">=</span> <span style="color: #666666">110/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi
+
+tx <span style="color: #666666">=</span>  math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2
+ty <span style="color: #666666">=</span>  math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2
+
+<span style="color: #408080; font-style: italic"># theta1 = 50/180.0 * math.pi</span>
+<span style="color: #408080; font-style: italic"># theta2 = 80/180.0 * math.pi</span>
+
+<span style="color: #408080; font-style: italic"># 1. Calculate l3</span>
+l3 <span style="color: #666666">=</span> math<span style="color: #666666">.</span>sqrt( tx<span style="color: #666666">**2</span> <span style="color: #666666">+</span> ty<span style="color: #666666">**2</span> )
+
+<span style="color: #408080; font-style: italic"># 2. Calculate α_2</span>
+a2 <span style="color: #666666">=</span> math<span style="color: #666666">.</span>acos( (l1<span style="color: #666666">**2</span> <span style="color: #666666">+</span> l2<span style="color: #666666">**2</span> <span style="color: #666666">-</span> l3<span style="color: #666666">**2</span>)<span style="color: #666666">/</span>(<span style="color: #666666">2*</span>l1<span style="color: #666666">*</span>l2) )
+<span style="color: #008000">print</span>(<span style="color: #BA2121">&#39;a2&#39;</span>, <span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(a2<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span>) )
+
+<span style="color: #408080; font-style: italic"># 3. Calculate theta_2</span>
+theta2d <span style="color: #666666">=</span> math<span style="color: #666666">.</span>pi <span style="color: #666666">-</span> a2
+<span style="color: #008000">print</span>(<span style="color: #BA2121">&#39;a2&#39;</span>, <span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(a2<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span>), <span style="color: #BA2121">&quot;theta2&quot;</span>, <span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(theta2d<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span>) )
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre >
+a2 70.00
+a2 70.00 theta2 110.00
+</pre>
+</div>
+</div>
+
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-a260a418-5f49-4ff3-9f5f-cb3b7360e1b9" ><span id="id-a260a418-5f49-4ff3-9f5f-cb3b7360e1b9"><img id="img-id-a260a418-5f49-4ff3-9f5f-cb3b7360e1b9"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-09a7e8fe-7e87-4340-9fb5-0458cbc9193c" ><span id="id-09a7e8fe-7e87-4340-9fb5-0458cbc9193c"><img id="img-id-09a7e8fe-7e87-4340-9fb5-0458cbc9193c" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00023_frag_00001" data-state="slide_00023_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div style="font-size:0.5em"><!-- start of style="font-size:0.5em" -->
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span>fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure()
+ax <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">1</span>,<span style="color: #666666">1</span>)
+ax<span style="color: #666666">.</span>set_aspect(<span style="color: #BA2121">&quot;equal&quot;</span>)
+<span style="color: #408080; font-style: italic"># cos(t1)*l1, sin(t1)*l1 -&gt; cos(t1)*l1 + cos(t1+t2) * l1, sin(t1)*l2 + sin(t1+t2)*l2 </span>
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1], [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 ], <span style="color: #BA2121">&#39;-&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;blue&#39;</span>, linewidth<span style="color: #666666">=5</span> )
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1<span style="color: #666666">/3</span>], [ math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1<span style="color: #666666">/3</span> ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], [ math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;-&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=5</span> )
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], 
+        [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;green&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.05</span>, <span style="color: #666666">0.01</span>, <span style="color: #BA2121">&quot;θ_1&quot;</span>)
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.02</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.05</span>, <span style="color: #BA2121">&quot;θ_2&quot;</span>)
+
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.1</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.03</span>, <span style="color: #BA2121">&quot;α_2&quot;</span>)
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.3</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.05</span>, <span style="color: #666666">0.3</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.05</span>, <span style="color: #BA2121">&quot;l1&quot;</span> )
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 <span style="color: #666666">-</span> <span style="color: #666666">0.05</span>, 
+        math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 <span style="color: #666666">+</span> <span style="color: #666666">0.1</span> , <span style="color: #BA2121">&quot;l2&quot;</span> )
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> ( math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ) <span style="color: #666666">+</span> <span style="color: #666666">0.01</span> , 
+         <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> ( math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ), <span style="color: #BA2121">&quot;l3&quot;</span> )
+
+da <span style="color: #666666">=</span> alpha <span style="color: #666666">-</span> theta1
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>,  math<span style="color: #666666">.</span>cos( alpha <span style="color: #666666">+</span> da ) <span style="color: #666666">*</span> l1], [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin( alpha <span style="color: #666666">+</span> da ) <span style="color: #666666">*</span> l1 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;blue&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos( alpha <span style="color: #666666">+</span> da ) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], [ math<span style="color: #666666">.</span>sin(alpha <span style="color: #666666">+</span> da) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>text( tx <span style="color: #666666">+</span> <span style="color: #666666">0.01</span>, 
+         ty <span style="color: #666666">+</span> <span style="color: #666666">0.01</span>, <span style="color: #BA2121">&quot;(tx,ty)&quot;</span> )
+
+dda <span style="color: #666666">=</span> math<span style="color: #666666">.</span>cos( da ) <span style="color: #666666">*</span> l1
+
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1,  math<span style="color: #666666">.</span>cos(alpha) <span style="color: #666666">*</span> dda ], [ math<span style="color: #666666">.</span>sin(theta1)<span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(alpha) <span style="color: #666666">*</span> dda ], <span style="color: #BA2121">&#39;:&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;cyan&#39;</span> )
+ax<span style="color: #666666">.</span>text(  math<span style="color: #666666">.</span>cos(alpha) <span style="color: #666666">*</span> dda <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos( alpha <span style="color: #666666">-</span> math<span style="color: #666666">.</span>pi<span style="color: #666666">/2</span>) <span style="color: #666666">*</span> <span style="color: #666666">0.05</span> ,  math<span style="color: #666666">.</span>sin(alpha) <span style="color: #666666">*</span> dda <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin( alpha <span style="color: #666666">-</span> math<span style="color: #666666">.</span>pi<span style="color: #666666">/2</span> ) <span style="color: #666666">*</span> <span style="color: #666666">0.05</span>, <span style="color: #BA2121">&quot;l4&quot;</span> )
+
+tl1 <span style="color: #666666">=</span> math<span style="color: #666666">.</span>cos( da ) <span style="color: #666666">*</span> l3
+
+ax<span style="color: #666666">.</span>plot( [ tx, math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> tl1 ], [ ty, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> tl1 ], <span style="color: #BA2121">&#39;:&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;magenta&#39;</span> )
+ax<span style="color: #666666">.</span>text(  math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> tl1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos( tl1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>pi<span style="color: #666666">/2</span>) <span style="color: #666666">*</span> <span style="color: #666666">0.05</span> ,  math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> tl1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin( tl1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>pi<span style="color: #666666">/2</span> ) <span style="color: #666666">*</span> <span style="color: #666666">0.05</span>, <span style="color: #BA2121">&quot;l5&quot;</span> )
+
+sl1 <span style="color: #666666">=</span> addJBFigure( <span style="color: #BA2121">&quot;sl1&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of style="font-size:0.5em" -->
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-81c4dfc2-ab2d-44c4-857d-5f1eebfee760" ><span id="id-81c4dfc2-ab2d-44c4-857d-5f1eebfee760"><img id="img-id-81c4dfc2-ab2d-44c4-857d-5f1eebfee760"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-6139cc94-b108-4834-8c01-12681a8e3c7d" ><span id="id-6139cc94-b108-4834-8c01-12681a8e3c7d"><img id="img-id-6139cc94-b108-4834-8c01-12681a8e3c7d" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00024_frag_00001" data-state="slide_00024_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<span id="id-43f22862-9f7e-4031-a64f-ab38f298c551" ><span id="id-43f22862-9f7e-4031-a64f-ab38f298c551"><img id="img-id-43f22862-9f7e-4031-a64f-ab38f298c551"     src="assets/images/sl1.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-34fb905d-6aba-4928-86af-6fc2ed7039aa" ><span id="id-34fb905d-6aba-4928-86af-6fc2ed7039aa"><img id="img-id-34fb905d-6aba-4928-86af-6fc2ed7039aa"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-e2f1ab20-b5f5-4b7c-9459-57cc6e2dfd57" ><span id="id-e2f1ab20-b5f5-4b7c-9459-57cc6e2dfd57"><img id="img-id-e2f1ab20-b5f5-4b7c-9459-57cc6e2dfd57" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00025_frag_00001" data-state="slide_00025_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Sine Law</h1>
+
+<div class="jb-text">
+<p>Since we formed a right angle triangle, we now know</p>
+\[
+  l5 = \sin(\alpha_2) * l2
+\]
+<p>But at the same time, we also know</p>
+\[
+  l5 = \sin(\alpha_1) * l3
+\]
+<p>Applying the same reasoning to the other right angle triangle, we can also derive</p>
+\[
+  l4 = \sin(\alpha_1) * l1
+\]
+<p>Sine Law</p>
+\[
+  \frac{\sin(\alpha_2)}{l3} = \frac{\sin(\alpha_1)}{l2} = \frac{\sin(\alpha_3)}{l1} 
+\]
+</p>
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-68a12e4f-42a2-494e-b750-c00f60f57e87" ><span id="id-68a12e4f-42a2-494e-b750-c00f60f57e87"><img id="img-id-68a12e4f-42a2-494e-b750-c00f60f57e87"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-f41ca530-a84d-4c86-ae5c-602be374f707" ><span id="id-f41ca530-a84d-4c86-ae5c-602be374f707"><img id="img-id-f41ca530-a84d-4c86-ae5c-602be374f707" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00026_frag_00001" data-state="slide_00026_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #008000; font-weight: bold">import</span> <span style="color: #0000FF; font-weight: bold">matplotlib.pyplot</span> <span style="color: #008000; font-weight: bold">as</span> <span style="color: #0000FF; font-weight: bold">plt</span>
+
+l1 <span style="color: #666666">=</span> <span style="color: #666666">0.5</span>
+l2 <span style="color: #666666">=</span> <span style="color: #666666">0.4</span>
+theta1 <span style="color: #666666">=</span> <span style="color: #666666">50/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi
+theta2 <span style="color: #666666">=</span> <span style="color: #666666">80/180.0</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>pi
+
+tx <span style="color: #666666">=</span>  math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2
+ty <span style="color: #666666">=</span>  math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2
+
+fig <span style="color: #666666">=</span> plt<span style="color: #666666">.</span>figure(figsize<span style="color: #666666">=</span>(<span style="color: #666666">8</span>,<span style="color: #666666">8</span>))
+ax <span style="color: #666666">=</span> fig<span style="color: #666666">.</span>add_subplot(<span style="color: #666666">1</span>,<span style="color: #666666">1</span>,<span style="color: #666666">1</span>)
+ax<span style="color: #666666">.</span>set_aspect(<span style="color: #BA2121">&quot;equal&quot;</span>)
+<span style="color: #408080; font-style: italic"># cos(t1)*l1, sin(t1)*l1 -&gt; cos(t1)*l1 + cos(t1+t2) * l1, sin(t1)*l2 + sin(t1+t2)*l2 </span>
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1], [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 ], <span style="color: #BA2121">&#39;-&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;blue&#39;</span>, linewidth<span style="color: #666666">=5</span> )
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1<span style="color: #666666">/3</span>], [ math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1<span style="color: #666666">/3</span> ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>plot( [ math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], [ math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;-&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=5</span> )
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], 
+        [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;green&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.05</span>, <span style="color: #666666">0.01</span>, <span style="color: #BA2121">&quot;$θ_1$&quot;</span>)
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.02</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.05</span>, <span style="color: #BA2121">&quot;$θ_2$&quot;</span>)
+
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.1</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">-</span> <span style="color: #666666">0.03</span>, <span style="color: #BA2121">&quot;$α_2$&quot;</span>)
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.05</span>, <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.02</span>, <span style="color: #BA2121">&quot;$l_1$&quot;</span> )
+ax<span style="color: #666666">.</span>text( math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 <span style="color: #666666">-</span> <span style="color: #666666">0.05</span>, 
+        math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 <span style="color: #666666">+</span> <span style="color: #666666">0.1</span> , <span style="color: #BA2121">&quot;$l_2$&quot;</span> )
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> ( math<span style="color: #666666">.</span>cos(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ) <span style="color: #666666">+</span> <span style="color: #666666">0.01</span> , 
+         <span style="color: #666666">0.5</span> <span style="color: #666666">*</span> ( math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ), <span style="color: #BA2121">&quot;$l_3$&quot;</span> )
+
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">0</span>, <span style="color: #666666">-</span>math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1], [ <span style="color: #666666">0</span>, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;blue&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+ax<span style="color: #666666">.</span>plot( [ <span style="color: #666666">-</span>math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1,math<span style="color: #666666">.</span>cos(theta1)<span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>cos(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2], [ math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1, math<span style="color: #666666">.</span>sin(theta1) <span style="color: #666666">*</span> l1 <span style="color: #666666">+</span> math<span style="color: #666666">.</span>sin(theta1<span style="color: #666666">+</span>theta2) <span style="color: #666666">*</span> l2 ], <span style="color: #BA2121">&#39;--&#39;</span>, color<span style="color: #666666">=</span><span style="color: #BA2121">&#39;red&#39;</span>, linewidth<span style="color: #666666">=2</span> )
+
+ax<span style="color: #666666">.</span>text( tx <span style="color: #666666">+</span> <span style="color: #666666">0.01</span>, 
+         ty <span style="color: #666666">+</span> <span style="color: #666666">0.01</span>, <span style="color: #BA2121">&quot;$(t_x,t_y)$&quot;</span> )
+
+ax<span style="color: #666666">.</span>text( <span style="color: #666666">0.0</span>, 
+         <span style="color: #666666">0.03</span>, <span style="color: #BA2121">&quot;$</span><span style="color: #BB6622; font-weight: bold">\\</span><span style="color: #BA2121">alpha_1$&quot;</span> )
+
+ik5 <span style="color: #666666">=</span> addJBFigure( <span style="color: #BA2121">&quot;ik5&quot;</span>, <span style="color: #666666">0</span>, <span style="color: #666666">0</span>, fig )
+plt<span style="color: #666666">.</span>close()
+</pre></div>
+
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-ae817ca0-b0af-4876-a662-14862d876ac7" ><span id="id-ae817ca0-b0af-4876-a662-14862d876ac7"><img id="img-id-ae817ca0-b0af-4876-a662-14862d876ac7"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-5e3ae042-cfd3-4471-b3a7-a7a015db2cfe" ><span id="id-5e3ae042-cfd3-4471-b3a7-a7a015db2cfe"><img id="img-id-5e3ae042-cfd3-4471-b3a7-a7a015db2cfe" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00027_frag_00001" data-state="slide_00027_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Inverse Kinematics Two Link System</h1>
+
+<span id="id-9406e56c-78f9-4641-903b-d63762b98fc6" ><span id="id-9406e56c-78f9-4641-903b-d63762b98fc6"><img id="img-id-9406e56c-78f9-4641-903b-d63762b98fc6"     src="assets/images/ik5.svg"/></span>
+</span>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-457cc2f6-dc7e-4986-9ca9-21a3cbe28feb" ><span id="id-457cc2f6-dc7e-4986-9ca9-21a3cbe28feb"><img id="img-id-457cc2f6-dc7e-4986-9ca9-21a3cbe28feb"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-433a149d-b2db-4d01-bb03-d968f998b1b6" ><span id="id-433a149d-b2db-4d01-bb03-d968f998b1b6"><img id="img-id-433a149d-b2db-4d01-bb03-d968f998b1b6" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00028_frag_00001" data-state="slide_00028_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+
+<h1>Law of Sines</h1>
+
+<div class="jb-text">
+\[
+  \frac{l_3}{sin(\alpha_2)} = \frac{l_2}{sin(\alpha_1)} = \frac{l_1}{sin(\alpha_3)} 
+\]
+
+<p>We can then calculate the angle \(α_1\)</p>
+</div>
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-0fab6ed3-0ad3-4d03-9909-5aa49dd21d37" ><span id="id-0fab6ed3-0ad3-4d03-9909-5aa49dd21d37"><img id="img-id-0fab6ed3-0ad3-4d03-9909-5aa49dd21d37"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-536e70fa-e2ab-4eee-9b05-568207e0e2f4" ><span id="id-536e70fa-e2ab-4eee-9b05-568207e0e2f4"><img id="img-id-536e70fa-e2ab-4eee-9b05-568207e0e2f4" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00029_frag_00001" data-state="slide_00029_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+<div class="jb-input jb-render jb-code" style="text-align:center">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-input-code jb-render">
+<div style="font-size:0.5em"><!-- start of style="font-size:0.5em" -->
+<div class="highlight" style="background: #f8f8f8; color:#101010;display=inline-block;"><pre style="line-height: 125%"><span></span><span style="color: #408080; font-style: italic"># Inverse kinematic procedure</span>
+<span style="color: #408080; font-style: italic"># Input: tx, ty, l1, l2</span>
+
+tx <span style="color: #666666">=</span> <span style="color: #666666">-0.2</span>
+ty <span style="color: #666666">=</span> <span style="color: #666666">0.4</span>
+
+l1 <span style="color: #666666">=</span> <span style="color: #666666">0.5</span>
+l2 <span style="color: #666666">=</span> <span style="color: #666666">0.4</span>
+
+<span style="color: #408080; font-style: italic"># theta1 = 50/180.0 * math.pi</span>
+<span style="color: #408080; font-style: italic"># theta2 = 80/180.0 * math.pi</span>
+
+<span style="color: #408080; font-style: italic"># 1. Calculate l3</span>
+l3 <span style="color: #666666">=</span> math<span style="color: #666666">.</span>sqrt( tx<span style="color: #666666">**2</span> <span style="color: #666666">+</span> ty<span style="color: #666666">**2</span> )
+
+<span style="color: #408080; font-style: italic"># 2. Calculate α_2 knee angle</span>
+a2 <span style="color: #666666">=</span> math<span style="color: #666666">.</span>acos( (l1<span style="color: #666666">**2</span> <span style="color: #666666">+</span> l2<span style="color: #666666">**2</span> <span style="color: #666666">-</span> l3<span style="color: #666666">**2</span>)<span style="color: #666666">/</span>(<span style="color: #666666">2*</span>l1<span style="color: #666666">*</span>l2) )
+<span style="color: #008000">print</span>(<span style="color: #BA2121">&#39;a2&#39;</span>, <span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(a2<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span>) )
+
+<span style="color: #408080; font-style: italic"># 3. Calculate theta_2</span>
+theta2d <span style="color: #666666">=</span> math<span style="color: #666666">.</span>pi <span style="color: #666666">-</span> a2
+<span style="color: #008000">print</span>(<span style="color: #BA2121">&quot;theta2&quot;</span>, <span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(theta2d<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi<span style="color: #666666">*180.0</span>) )
+
+<span style="color: #408080; font-style: italic"># 4. Calculate α_1</span>
+<span style="color: #408080; font-style: italic"># Sine law: math.sin(a2)/l3 = math.sin(a1)/l2</span>
+
+a1 <span style="color: #666666">=</span> math<span style="color: #666666">.</span>asin( math<span style="color: #666666">.</span>sin(a2)<span style="color: #666666">*</span> l2<span style="color: #666666">/</span>l3 )
+<span style="color: #008000">print</span>( <span style="color: #BA2121">&quot;a1&quot;</span>, <span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(a1<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi <span style="color: #666666">*</span> <span style="color: #666666">180.0</span>) )
+alpha <span style="color: #666666">=</span> math<span style="color: #666666">.</span>atan2( ty, tx )
+<span style="color: #008000">print</span>( <span style="color: #BA2121">&quot;alpha&quot;</span>, <span style="color: #BA2121">&quot;</span><span style="color: #BB6688; font-weight: bold">{0:5.2f}</span><span style="color: #BA2121">&quot;</span><span style="color: #666666">.</span>format(alpha<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi <span style="color: #666666">*</span> <span style="color: #666666">180.0</span>) )
+
+<span style="color: #408080; font-style: italic"># Calculate theta1 from a2 and beta</span>
+theta1 <span style="color: #666666">=</span> alpha <span style="color: #666666">-</span> a1
+<span style="color: #008000">print</span>( <span style="color: #BA2121">f&#39;theta1: </span><span style="color: #BB6688; font-weight: bold">{</span>theta1<span style="color: #666666">/</span>math<span style="color: #666666">.</span>pi <span style="color: #666666">*</span> <span style="color: #666666">180.0</span><span style="color: #BB6688; font-weight: bold">:</span><span style="color: #BA2121">5.2f</span><span style="color: #BB6688; font-weight: bold">}</span><span style="color: #BA2121">&#39;</span>)
+</pre></div>
+
+</div><!-- end of style="font-size:0.5em" -->
+</div><!-- end of jb-input-code jb-render -->
+
+</div>
+<div class="jb-print jb-render">
+<div style="font-size:0.5em"><!-- start of style="font-size:0.5em" -->
+<div class="jb-output jb-render code" style="text-align:center">
+<div class="jb-stdout code" style="display:inline-block; width:90%">
+<pre style="font-size:0.5em">
+a2 58.33
+theta2 121.67
+a1 49.57
+alpha 116.57
+theta1: 66.99
+</pre>
+</div>
+</div>
+
+</div><!-- end of style="font-size:0.5em" -->
+</div><!-- end of jb-print jb-render -->
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-56670c92-5932-4b57-a901-992469fda184" ><span id="id-56670c92-5932-4b57-a901-992469fda184"><img id="img-id-56670c92-5932-4b57-a901-992469fda184"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-41181584-dbc7-430e-bc21-bfe74028991b" ><span id="id-41181584-dbc7-430e-bc21-bfe74028991b"><img id="img-id-41181584-dbc7-430e-bc21-bfe74028991b" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+<section id="slide_00030_frag_00001" data-state="slide_00030_frag_00001">
+
+
+<!-- Header -->
+  
+
+<!-- Background -->
+
+
+<!-- Slide -->
+<div class="jb-slide">
+
+<div class="jb-output-code jb-render">
+
+<!-- start embedded style -->
+
+<!-- end embedded style -->
+<div class="jb-output jb-render">
+<div class="document" id="extension-to-three-links">
+<h1 class="title">Extension to Three Links</h1>
+<div class="jb-text docutils container">
+<p>Humanoid robots usually have three links in the lateral plane (ankle, knee, hip)</p>
+<p>In this case, we have an infinite number of solutions</p>
+<p>Must add additional constraints</p>
+<p>For example, the leg of a humanoid robot we commonly enforce</p>
+<ul class="simple">
+<li>ankle must be 90 degrees to the ground</li>
+<li>feet a parallel to the ground</li>
+</ul>
+</div>
+</div>
+
+</div><!-- end of jb-output jb-render -->
+</div><!-- end of jb-output-code jb-render -->
+
+
+</div>
+<!-- Footer -->
+
+<div class="jb-footer-left plain">
+    <span id="id-c7c8fe6e-4eb5-4ada-8530-f8feac381ffb" ><span id="id-c7c8fe6e-4eb5-4ada-8530-f8feac381ffb"><img id="img-id-c7c8fe6e-4eb5-4ada-8530-f8feac381ffb"     src="assets/images/logo.png"/></span>
+</span>
+
+</div>
+<div class="jb-footer-right plain">
+    <span id="id-4427d37f-ef2d-44f2-a8cb-f0c5e88331ad" ><span id="id-4427d37f-ef2d-44f2-a8cb-f0c5e88331ad"><img id="img-id-4427d37f-ef2d-44f2-a8cb-f0c5e88331ad" width="162" height="138"   src="assets/images/robbi.png"/></span>
+</span>
+
+</div>
+
+<aside class="notes">
+
+</aside>
+
+
+
+</section>
+        </div>
+        </div>
+
+        <script src="js/reveal.js"></script>
+
+        <script>
+            // More info about config & dependencies:
+            // - https://github.com/hakimel/reveal.js#configuration
+            // - https://github.com/hakimel/reveal.js#dependencies
+            Reveal.initialize({
+                math: {
+                    mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
+                    config: 'TeX-AMS_HTML-full',  // See http://docs.mathjax.org/en/latest/config-files.html
+                    // tex2jax: {
+                    //     inlineMath: [['$', '$'], ['\(', '\)']],
+                    //     displayMath: [['$$', '$$'], ['\[', '\]']],
+                    //     processEscapes: true,
+                    //     processEnvironments: true,
+                    //     skipTags: ['script', 'noscript', 'style', 'textarea', 'code', 'pre'],
+                    //     displayAlign: 'center',
+                    // }                
+                },
+                dependencies: [
+                    { src: 'plugin/markdown/marked.js' },
+                    { src: 'plugin/markdown/markdown.js' },
+                    { src: 'plugin/notes/notes.js', async: true },
+                    { src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+                    { src: 'plugin/math/math.js', async: true }
+                ]
+            });
+        </script>
+
+        <script>
+            <!-- Assets -->
+var assets = {
+"robbi" : new JBImage( "robbi", "12677", "162", "138", null, null, "assets/images/robbi", "png" ),
+"logo" : new JBImage( "logo", "12033", "0", "0", null, null, "assets/images/logo", "png" ),
+"fira-logo-1" : new JBImage( "fira-logo-1", "93836", "0", "0", null, null, "assets/images/FIRA-logo-1", "png" ),
+"pairLogo" : new JBImage( "pairLogo", "63051", "0", "0", null, null, "assets/images/pairLogo", "png" ),
+"ik1" : new JBImage( "ik1", "251894", "0", "0", "https://i.postimg.cc/HnLJgZR0/image.png", null, "assets/images/ik1", "png" ),
+"ik2" : new JBImage( "ik2", "15321", "0", "0", null, null, "assets/images/ik2", "svg" ),
+"ik3" : new JBImage( "ik3", "25404", "0", "0", null, null, "assets/images/ik3", "svg" ),
+"ik4" : new JBImage( "ik4", "21971", "0", "0", null, null, "assets/images/ik4", "svg" ),
+"flamingos" : new JBVideo( "flamingos", "4929045", "0", "0", "https://www.youtube.com/embed/3hUQbVaMaLs", null, "assets/videos/flamingos" ),
+"human1" : new JBVideo( "human1", "7528994", "0", "0", "https://www.youtube.com/embed/6ObNnCTV6MY", null, "assets/videos/human1" ),
+"sl1" : new JBImage( "sl1", "22850", "0", "0", null, null, "assets/images/sl1", "svg" ),
+"ik5" : new JBImage( "ik5", "23630", "0", "0", null, null, "assets/images/ik5", "svg" ) 
+};
+var assetInstances = {
+    "id-873c003a-73d9-4916-9476-7d5d1a22a45e": assets["robbi"],
+    "id-6108320b-ee50-41a6-9f60-2deaa9efffcb": assets["robbi"],
+    "id-fe5f28ee-6748-4d92-9934-6c04e187f45b": assets["robbi"],
+    "id-8e4686fe-47dd-4b9f-b017-c739b16929ab": assets["robbi"],
+    "id-cb9db373-476b-4309-9519-9f48baef4bab": assets["robbi"],
+    "id-fb31e42a-0360-4f80-8c5d-2cc200cf8b5a": assets["robbi"],
+    "id-3cb8449e-367e-47e9-89ed-21637ee151d8": assets["robbi"],
+    "id-341b7005-af32-462b-b826-0300b673276d": assets["robbi"],
+    "id-16aeac5a-e83e-45a8-bd2f-73e7fecd2a28": assets["robbi"],
+    "id-3910b8ee-7974-43bd-990a-fe8d612e53fd": assets["robbi"],
+    "id-7743ac60-4282-4dc0-a6dc-8fecc3f67c82": assets["robbi"],
+    "id-240d3d7a-2bf9-4a37-9728-5972c788efb0": assets["robbi"],
+    "id-1f5354ae-76a5-4062-b3a8-c181021719d2": assets["robbi"],
+    "id-cd9c9e7d-8212-466e-ac16-fabf39cfb0c3": assets["robbi"],
+    "id-deea6de9-ac32-4585-a1fc-1d05e3782eb4": assets["robbi"],
+    "id-40556594-429e-4330-a5c6-4dc91e45c39e": assets["robbi"],
+    "id-495cc127-3cea-4f97-8e75-645008be70fe": assets["robbi"],
+    "id-938e7795-cfee-42f3-9f1c-256b26f1869e": assets["robbi"],
+    "id-c61bdff3-fe06-4ecf-913b-df44762de6f5": assets["robbi"],
+    "id-e714b158-64ef-4e45-847d-8d3dbb87fd07": assets["robbi"],
+    "id-09a7e8fe-7e87-4340-9fb5-0458cbc9193c": assets["robbi"],
+    "id-6139cc94-b108-4834-8c01-12681a8e3c7d": assets["robbi"],
+    "id-e2f1ab20-b5f5-4b7c-9459-57cc6e2dfd57": assets["robbi"],
+    "id-f41ca530-a84d-4c86-ae5c-602be374f707": assets["robbi"],
+    "id-5e3ae042-cfd3-4471-b3a7-a7a015db2cfe": assets["robbi"],
+    "id-433a149d-b2db-4d01-bb03-d968f998b1b6": assets["robbi"],
+    "id-536e70fa-e2ab-4eee-9b05-568207e0e2f4": assets["robbi"],
+    "id-41181584-dbc7-430e-bc21-bfe74028991b": assets["robbi"],
+    "id-4427d37f-ef2d-44f2-a8cb-f0c5e88331ad": assets["robbi"],
+    "id-472a0d90-5fcb-4eb4-9ecd-0356947d14ed": assets["logo"],
+    "id-f5390b29-155b-43f5-8f14-1061e84f282c": assets["logo"],
+    "id-2e6c29e0-e5f4-45ba-b393-b7bfa96ca788": assets["logo"],
+    "id-08063340-237c-4b10-a873-d3949b6b4b2a": assets["logo"],
+    "id-8952cc19-56dc-44fd-9a3e-9a7ef9b8b917": assets["logo"],
+    "id-4d85a080-7f6f-4a73-a61a-42682d2e3259": assets["logo"],
+    "id-03f7512f-100b-43d6-8dd1-178e2e59a178": assets["logo"],
+    "id-38257468-2660-4e18-bdc7-8c96c3012d89": assets["logo"],
+    "id-32467ae6-403c-4745-982d-0331b490ebb7": assets["logo"],
+    "id-19251099-990a-4f14-b1e3-5d0d121b2924": assets["logo"],
+    "id-0f094d17-7340-4959-8f87-38b6e66dbe99": assets["logo"],
+    "id-8a673339-09e9-481a-a03e-22ba39dfd9c9": assets["logo"],
+    "id-efda014b-b85d-482a-aea7-d60969637ba6": assets["logo"],
+    "id-cd29d674-5c4a-4bc0-82b2-e0ba8bc21e3c": assets["logo"],
+    "id-6ab3913f-aa83-4e45-85c9-5aa26c10f824": assets["logo"],
+    "id-12abd00a-1b8d-47b5-9720-943b5357af4f": assets["logo"],
+    "id-20f280ca-e0fe-44f6-a670-8f5701d6d32f": assets["logo"],
+    "id-c6804ad0-127f-42df-b113-8d46f5fe0fbb": assets["logo"],
+    "id-bb37d9a3-fa93-4c42-9a04-88f2017f11c0": assets["logo"],
+    "id-f48fbcca-b95e-41de-9aad-f4f79da5bdf3": assets["logo"],
+    "id-a260a418-5f49-4ff3-9f5f-cb3b7360e1b9": assets["logo"],
+    "id-81c4dfc2-ab2d-44c4-857d-5f1eebfee760": assets["logo"],
+    "id-34fb905d-6aba-4928-86af-6fc2ed7039aa": assets["logo"],
+    "id-68a12e4f-42a2-494e-b750-c00f60f57e87": assets["logo"],
+    "id-ae817ca0-b0af-4876-a662-14862d876ac7": assets["logo"],
+    "id-457cc2f6-dc7e-4986-9ca9-21a3cbe28feb": assets["logo"],
+    "id-0fab6ed3-0ad3-4d03-9909-5aa49dd21d37": assets["logo"],
+    "id-56670c92-5932-4b57-a901-992469fda184": assets["logo"],
+    "id-c7c8fe6e-4eb5-4ada-8530-f8feac381ffb": assets["logo"],
+    "id-0778ae57-fdfa-4827-855e-509c4adfed02": assets["ik1"],
+    "id-45188bee-121f-470c-a9ce-ce01456ad5c4": assets["ik2"],
+    "id-b96eaa7e-5b9c-4c0f-9d1a-0e70ced84f7b": assets["ik3"],
+    "id-b9099623-fca3-45ee-8f27-5b7f50ca11ae": assets["ik3"],
+    "id-b593bd10-ec44-46ba-b3b0-e8b192ea1a23": assets["ik4"],
+    "id-c2883d3c-415b-4660-b7e0-4fdf2f661d9f": assets["flamingos"],
+    "id-02ee12c8-75df-4ad2-af6c-bd76e2dde187": assets["human1"],
+    "id-43f22862-9f7e-4031-a64f-ab38f298c551": assets["sl1"],
+    "id-9406e56c-78f9-4641-903b-d63762b98fc6": assets["ik5"]
+};
+<!-- End of Assets -->
+
+            convertURLs(assetInstances, "smart-path");
+        </script>
+        <script>
+            <!-- Characters -->
+var characters =
+{};
+<!-- End of Characters -->
+
+        </script>
+    </body>
+</html>
